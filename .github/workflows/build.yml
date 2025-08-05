@@ -1,0 +1,47 @@
+name: Build crDroid 7.15 for lime
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y openjdk-8-jdk git-core curl repo unzip bc python3 python3-pip gcc clang lz4 zstd
+        mkdir -p ~/bin
+        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+        chmod a+x ~/bin/repo
+        echo 'export PATH=~/bin:$PATH' >> ~/.bashrc
+    - name: Initialize repo
+      run: |
+        mkdir rom && cd rom
+        git config --global user.name "GitHub Builder"
+        git config --global user.email "builder@github.com"
+        repo init -u https://github.com/crdroidandroid/android.git -b 7.15
+    - name: Sync source
+      run: |
+        cd rom
+        repo sync -c --no-tags --no-clone-bundle --optimized-fetch --prune -j4
+    - name: Clone device tree
+      run: |
+        cd rom
+        git clone --depth=1 https://github.com/ArrowOS-Devices/device_xiaomi_lime.git device/xiaomi/lime
+        git clone --depth=1 https://github.com/ArrowOS-Devices/vendor_xiaomi_lime.git vendor/xiaomi/lime
+        git clone --depth=1 https://github.com/ArrowOS-Devices/kernel_xiaomi_lime.git kernel/xiaomi/lime
+    - name: Start build
+      run: |
+        cd rom
+        source build/envsetup.sh
+        lunch lineage_lime-userdebug
+        make bacon -j2
+    - name: Upload ROM
+      uses: actions/upload-artifact@v3
+      with:
+        name: crdroid-lime
+        path: rom/out/target/product/lime/*.zip
