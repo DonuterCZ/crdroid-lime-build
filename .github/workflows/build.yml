@@ -41,7 +41,8 @@ jobs:
         lunch lineage_lime-userdebug
         make bacon -j2
     - name: Upload ROM
-      uses: actions/upload-artifact@v3
+            uses: actions/upload-artifact@v3
       with:
         name: crdroid-lime
         path: rom/out/target/product/lime/*.zip
+
